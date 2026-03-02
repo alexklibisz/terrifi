@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -149,8 +150,10 @@ func (r *clientDeviceResource) Schema(
 			},
 
 			"blocked": schema.BoolAttribute{
-				MarkdownDescription: "Whether the client device is blocked from network access.",
+				MarkdownDescription: "Whether the client device is blocked from network access. Defaults to `false`.",
 				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
 			},
 		},
 	}
@@ -558,11 +561,11 @@ func (r *clientDeviceResource) apiToModel(c *unifi.Client, m *clientDeviceResour
 		m.ClientGroupIDs = types.SetNull(types.StringType)
 	}
 
-	// Preserve blocked state faithfully: true or false when explicitly set by
-	// the API, null when the API doesn't return the field at all.
+	// Treat nil Blocked as false — the absence of the field in the API
+	// response means the device is not blocked.
 	if c.Blocked != nil {
 		m.Blocked = types.BoolValue(*c.Blocked)
 	} else {
-		m.Blocked = types.BoolNull()
+		m.Blocked = types.BoolValue(false)
 	}
 }

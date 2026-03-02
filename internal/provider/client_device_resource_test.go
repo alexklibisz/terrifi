@@ -383,7 +383,7 @@ func TestClientDeviceAPIToModel(t *testing.T) {
 		assert.True(t, model.NetworkOverrideID.IsNull(), "NetworkOverrideID should be null")
 		assert.True(t, model.LocalDNSRecord.IsNull(), "LocalDNSRecord should be null")
 		assert.True(t, model.ClientGroupIDs.IsNull(), "ClientGroupIDs should be null")
-		assert.True(t, model.Blocked.IsNull(), "Blocked should be null")
+		assert.False(t, model.Blocked.ValueBool(), "Blocked should default to false")
 	})
 
 	t.Run("full client", func(t *testing.T) {
@@ -480,7 +480,7 @@ func TestClientDeviceAPIToModel(t *testing.T) {
 		var model clientDeviceResourceModel
 		r.apiToModel(c, &model, "default")
 
-		assert.True(t, model.Blocked.IsNull(), "Blocked should be null when nil")
+		assert.False(t, model.Blocked.ValueBool(), "Blocked should be false when nil")
 	})
 
 	t.Run("blocked false", func(t *testing.T) {
@@ -1181,6 +1181,95 @@ resource "terrifi_client_device" "test" {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("terrifi_client_device.test", "blocked", "false"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccClientDevice_blockedAddRemove(t *testing.T) {
+	mac := randomMAC()
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { preCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Step 1: Create with blocked = true
+			{
+				Config: fmt.Sprintf(`
+resource "terrifi_client_device" "test" {
+  mac     = %q
+  name    = "tfacc-blocked-ar"
+  blocked = true
+}
+`, mac),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("terrifi_client_device.test", "blocked", "true"),
+				),
+			},
+			// Step 2: Update to blocked = false
+			{
+				Config: fmt.Sprintf(`
+resource "terrifi_client_device" "test" {
+  mac     = %q
+  name    = "tfacc-blocked-ar"
+  blocked = false
+}
+`, mac),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("terrifi_client_device.test", "blocked", "false"),
+				),
+			},
+			// Step 3: Remove blocked from config entirely — should default to false, no diff
+			{
+				Config: fmt.Sprintf(`
+resource "terrifi_client_device" "test" {
+  mac  = %q
+  name = "tfacc-blocked-ar"
+}
+`, mac),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("terrifi_client_device.test", "blocked", "false"),
+				),
+			},
+			// Step 4: Add blocked = true back
+			{
+				Config: fmt.Sprintf(`
+resource "terrifi_client_device" "test" {
+  mac     = %q
+  name    = "tfacc-blocked-ar"
+  blocked = true
+}
+`, mac),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("terrifi_client_device.test", "blocked", "true"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccClientDevice_blockedDefaultFalse(t *testing.T) {
+	mac := randomMAC()
+	config := fmt.Sprintf(`
+resource "terrifi_client_device" "test" {
+  mac  = %q
+  name = "tfacc-blocked-default"
+}
+`, mac)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { preCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Step 1: Create without blocked — should default to false
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("terrifi_client_device.test", "blocked", "false"),
+				),
+			},
+			// Step 2: Same config again — should produce no diff
+			{
+				Config:   config,
+				PlanOnly: true,
 			},
 		},
 	})

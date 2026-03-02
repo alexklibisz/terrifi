@@ -111,7 +111,7 @@ resource "terrifi_client_device" "blocked" {
 - `network_override_id` (String) — The network ID for VLAN/network override.
 - `local_dns_record` (String) — A local DNS hostname for this client device. Requires `fixed_ip`.
 - `client_group_ids` (Set of String) — Set of client group IDs to assign this device to. Use `terrifi_client_group` to manage groups.
-- `blocked` (Boolean) — Whether the client device is blocked from network access.
+- `blocked` (Boolean) — Whether the client device is blocked from network access. Defaults to `false`.
 - `site` (String) — The site to associate the client device with. Defaults to the provider site. Changing this forces a new resource.
 
 ### Read-Only
