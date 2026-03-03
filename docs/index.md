@@ -24,15 +24,17 @@ Set the following environment variables:
 - `UNIFI_API` — Controller URL, including the port.
 - `UNIFI_API_KEY` OR `UNIFI_USERNAME` and `UNIFI_PASSWORD` - either the API key or the username and password are required to authenticate with the controller. The API key is preferred, as it's arguably more secure and I've seen instances of rate-limiting with the username and password.
 - `UNIFI_INSECURE` — Set to `true` if the controller is using a self-signed TLS certificate.
+- `UNIFI_RESPONSE_CACHING` — Set to `true` to cache GET responses from v2 API endpoints, reducing load on the controller.
 
 ### Explicit configuration
 
 ```terraform
 provider "terrifi" {
-  api_url       = "https://192.168.1.1"
-  api_key       = var.unifi_api_key
-  site          = "default"
-  allow_insecure = true
+  api_url          = "https://192.168.1.1"
+  api_key          = var.unifi_api_key
+  site             = "default"
+  allow_insecure   = true
+  response_caching = true
 }
 ```
 
@@ -45,6 +47,7 @@ provider "terrifi" {
 - `password` (String, Sensitive) — Password for the UniFi controller API. Can also be set with the `UNIFI_PASSWORD` environment variable.
 - `site` (String) — The UniFi site to manage. Defaults to `default`. Can also be set with the `UNIFI_SITE` environment variable.
 - `allow_insecure` (Boolean) — Skip TLS certificate verification. Useful for local controllers with self-signed certs. Can also be set with the `UNIFI_INSECURE` environment variable.
+- `response_caching` (Boolean) — Cache GET responses from v2 API endpoints during a single Terraform run. Reduces duplicate list-all calls for firewall zones and policies, which is especially helpful on low-end hardware (e.g., Raspberry Pi). Any write operation invalidates the cache. Can also be set with the `UNIFI_RESPONSE_CACHING` environment variable.
 
 ## Authentication
 
