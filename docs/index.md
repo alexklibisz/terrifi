@@ -46,6 +46,17 @@ provider "terrifi" {
 - `site` (String) — The UniFi site to manage. Defaults to `default`. Can also be set with the `UNIFI_SITE` environment variable.
 - `allow_insecure` (Boolean) — Skip TLS certificate verification. Useful for local controllers with self-signed certs. Can also be set with the `UNIFI_INSECURE` environment variable.
 
+## Performance on Low-End Hardware
+
+If the UniFi controller is running on low-end hardware (e.g., Raspberry Pi), Terraform's default parallelism of 10 concurrent operations can overwhelm the API server, causing slowdowns or crashes. Reduce parallelism to limit concurrent API requests:
+
+```sh
+tofu plan -parallelism=1
+tofu apply -parallelism=1
+```
+
+You can experiment with intermediate values like `-parallelism=2` or `-parallelism=5` to find the right balance between speed and stability.
+
 ## Authentication
 
 The provider supports two authentication methods:
