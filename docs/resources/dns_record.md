@@ -71,7 +71,7 @@ To import a record from a non-default site, use the `site:id` format:
 terraform import terrifi_dns_record.web <site>:<id>
 ```
 
-You can also use the [Terrifi CLI](../cli.md) to generate import blocks for all DNS records automatically:
+You can also use the [Terrifi CLI](../index.md#cli) to generate import blocks for all DNS records automatically:
 
 ```shell
 terrifi generate-imports terrifi_dns_record

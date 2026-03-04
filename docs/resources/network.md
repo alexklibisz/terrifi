@@ -67,7 +67,7 @@ To import a network from a non-default site, use the `site:id` format:
 terraform import terrifi_network.iot <site>:<id>
 ```
 
-You can also use the [Terrifi CLI](../cli.md) to generate import blocks for all networks automatically:
+You can also use the [Terrifi CLI](../index.md#cli) to generate import blocks for all networks automatically:
 
 ```shell
 terrifi generate-imports terrifi_network

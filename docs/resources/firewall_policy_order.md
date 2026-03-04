@@ -93,7 +93,7 @@ To import from a non-default site:
 terraform import terrifi_firewall_policy_order.example <site>:<source_zone_id>:<destination_zone_id>
 ```
 
-You can also use the [Terrifi CLI](../cli.md) to generate import blocks automatically:
+You can also use the [Terrifi CLI](../index.md#cli) to generate import blocks automatically:
 
 ```shell
 terrifi generate-imports terrifi_firewall_policy_order

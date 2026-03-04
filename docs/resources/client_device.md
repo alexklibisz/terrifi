@@ -132,7 +132,7 @@ To import from a non-default site, use the `site:id` format:
 terraform import terrifi_client_device.printer <site>:<id>
 ```
 
-You can also use the [Terrifi CLI](../cli.md) to generate import blocks for all client devices automatically:
+You can also use the [Terrifi CLI](../index.md#cli) to generate import blocks for all client devices automatically:
 
 ```shell
 terrifi generate-imports terrifi_client_device
