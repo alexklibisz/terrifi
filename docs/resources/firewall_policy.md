@@ -193,7 +193,7 @@ To import from a non-default site, use the `site:id` format:
 terraform import terrifi_firewall_policy.example <site>:<id>
 ```
 
-You can also use the [Terrifi CLI](../cli.md) to generate import blocks for all firewall policies automatically:
+You can also use the [Terrifi CLI](../index.md#cli) to generate import blocks for all firewall policies automatically:
 
 ```shell
 terrifi generate-imports terrifi_firewall_policy

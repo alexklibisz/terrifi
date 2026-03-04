@@ -76,17 +76,6 @@ Or via environment variable:
 export UNIFI_RESPONSE_CACHING=true
 ```
 
-## Performance on Low-End Hardware
-
-If the UniFi controller is running on low-end hardware (e.g., Raspberry Pi), Terraform's default parallelism of 10 concurrent operations can overwhelm the API server, causing slowdowns or crashes. Reduce parallelism to limit concurrent API requests:
-
-```sh
-tofu plan -parallelism=1
-tofu apply -parallelism=1
-```
-
-You can experiment with intermediate values like `-parallelism=2` or `-parallelism=5` to find the right balance between speed and stability.
-
 ## Authentication
 
 The provider supports two authentication methods:
@@ -95,3 +84,70 @@ The provider supports two authentication methods:
 2. **Username + password** (`username` and `password`) — Legacy local-account authentication.
 
 The API key is preferred, as it's arguably more secure and I've seen instances of rate-limiting with the username and password.
+
+## CLI
+
+The Terrifi CLI connects to a live UniFi controller and generates Terraform `import {}` and `resource {}` blocks, making it easy to bring existing infrastructure under Terraform management.
+
+### Install
+
+```sh
+go install github.com/alexklibisz/terrifi/cmd/terrifi@latest
+```
+
+### Configuration
+
+The CLI uses the same `UNIFI_*` environment variables as the provider (see above).
+
+### Commands
+
+#### check-connection
+
+Verify that your environment variables are configured correctly:
+
+```sh
+terrifi check-connection
+```
+
+#### generate-imports
+
+Generate Terraform import blocks for a resource type:
+
+```sh
+terrifi generate-imports <resource_type>
+```
+
+Supported resource types:
+
+| Resource Type | Description | Docs |
+|---|---|---|
+| `terrifi_client_device` | Client devices (aliases, fixed IPs, etc.) | [client_device](resources/client_device.md) |
+| `terrifi_client_group` | Client groups | [client_group](resources/client_group.md) |
+| `terrifi_dns_record` | DNS records | [dns_record](resources/dns_record.md) |
+| `terrifi_firewall_zone` | Firewall zones | [firewall_zone](resources/firewall_zone.md) |
+| `terrifi_firewall_policy` | Firewall policies | [firewall_policy](resources/firewall_policy.md) |
+| `terrifi_network` | Networks | [network](resources/network.md) |
+| `terrifi_wlan` | Wireless networks | [wlan](resources/wlan.md) |
+
+#### Example
+
+```sh
+terrifi generate-imports terrifi_dns_record > imports.tf
+```
+
+This produces output like:
+
+```terraform
+import {
+  id = "abc123"
+  to = terrifi_dns_record.web_example_com
+}
+
+resource "terrifi_dns_record" "web_example_com" {
+  name        = "web.example.com"
+  value       = "192.168.1.100"
+  record_type = "A"
+}
+```
+
+You can then run `terraform plan` to verify and `terraform apply` to complete the import.

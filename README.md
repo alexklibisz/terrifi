@@ -14,7 +14,7 @@ Compared to existing UniFi providers ([paultyng](https://github.com/paultyng/ter
 
 - [OpenTofu Registry](https://search.opentofu.org/provider/alexklibisz/terrifi/latest)
 - [Provider](./docs/index.md)
-- [CLI](./docs/cli.md)
+- [CLI](./docs/index.md#cli)
 
 ## Background
 
