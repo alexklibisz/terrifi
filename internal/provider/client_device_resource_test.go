@@ -1530,7 +1530,7 @@ resource "terrifi_client_device" "test" {
 					resource.TestCheckResourceAttr("terrifi_client_device.test", "device_type_id", "1084"),
 				),
 			},
-			// Step 2: Change device_type_id (and name to force a v1 API update)
+			// Step 2: Change device_type_id and name
 			{
 				Config: fmt.Sprintf(`
 resource "terrifi_client_device" "test" {
@@ -1549,6 +1549,96 @@ resource "terrifi_client_device" "test" {
 resource "terrifi_client_device" "test" {
   mac  = %q
   name = "tfacc-devtype-v3"
+}
+`, mac),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("terrifi_client_device.test", "device_type_id"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccClientDevice_deviceTypeIDOnlyChange tests changing only device_type_id
+// without changing any other field. This triggers a no-op PUT to rest/user
+// (device_type_id is managed via a separate v2 API), which the controller may
+// respond to with an empty data array.
+func TestAccClientDevice_deviceTypeIDOnlyChange(t *testing.T) {
+	mac := randomMAC()
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { preCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Step 1: Create with device_type_id
+			{
+				Config: fmt.Sprintf(`
+resource "terrifi_client_device" "test" {
+  mac            = %q
+  name           = "tfacc-devtype-only"
+  device_type_id = 1084
+}
+`, mac),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("terrifi_client_device.test", "device_type_id", "1084"),
+				),
+			},
+			// Step 2: Change only device_type_id — no other field changes
+			{
+				Config: fmt.Sprintf(`
+resource "terrifi_client_device" "test" {
+  mac            = %q
+  name           = "tfacc-devtype-only"
+  device_type_id = 1
+}
+`, mac),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("terrifi_client_device.test", "device_type_id", "1"),
+				),
+			},
+			// Step 3: Change device_type_id again — still no other field changes
+			{
+				Config: fmt.Sprintf(`
+resource "terrifi_client_device" "test" {
+  mac            = %q
+  name           = "tfacc-devtype-only"
+  device_type_id = 1902
+}
+`, mac),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("terrifi_client_device.test", "device_type_id", "1902"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccClientDevice_deviceTypeIDOnlyRemove tests removing device_type_id
+// without changing any other field.
+func TestAccClientDevice_deviceTypeIDOnlyRemove(t *testing.T) {
+	mac := randomMAC()
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { preCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Step 1: Create with device_type_id
+			{
+				Config: fmt.Sprintf(`
+resource "terrifi_client_device" "test" {
+  mac            = %q
+  name           = "tfacc-devtype-remove"
+  device_type_id = 1084
+}
+`, mac),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("terrifi_client_device.test", "device_type_id", "1084"),
+				),
+			},
+			// Step 2: Remove device_type_id — no other field changes
+			{
+				Config: fmt.Sprintf(`
+resource "terrifi_client_device" "test" {
+  mac  = %q
+  name = "tfacc-devtype-remove"
 }
 `, mac),
 				Check: resource.ComposeTestCheckFunc(
