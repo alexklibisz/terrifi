@@ -37,6 +37,8 @@ jobs:
         uses: opentofu/setup-opentofu@v1
         with:
           tofu_wrapper: false
+      - name: Set TF_ACC_TERRAFORM_PATH
+        run: echo "TF_ACC_TERRAFORM_PATH=$(which tofu)" >> "$GITHUB_ENV"
       - name: Install Taskfile
         timeout-minutes: 1
         uses: arduino/setup-task@v2
