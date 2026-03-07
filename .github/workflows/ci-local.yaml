@@ -38,23 +38,12 @@ jobs:
       - name: Download Go dependencies
         timeout-minutes: 10
         run: task deps
-      - name: Debug Go cache paths
-        timeout-minutes: 1
-        run: |
-          echo "GOPATH=$(go env GOPATH)"
-          echo "GOMODCACHE=$(go env GOMODCACHE)"
-          echo "GOCACHE=$(go env GOCACHE)"
-          echo "HOME=$HOME"
-          echo "whoami=$(whoami)"
-          du -sh "$(go env GOMODCACHE)" || echo "GOMODCACHE not found"
-          du -sh "$(go env GOCACHE)" || echo "GOCACHE not found"
-          du -sh /root/.cache/go-build 2>/dev/null || echo "/root/.cache/go-build not found"
       - name: Build
         timeout-minutes: 10
         run: task build
-      - name: Lint
+      - name: Format check
         timeout-minutes: 1
-        run: task lint
+        run: task fmt
       - name: Unit tests
         timeout-minutes: 1
         run: task test:unit
