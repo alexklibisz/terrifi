@@ -53,7 +53,15 @@ func runListDeviceTypes(cmd *cobra.Command, args []string) error {
 
 	htmlFlag, _ := cmd.Flags().GetBool("html")
 	if htmlFlag {
-		return writeDeviceTypesHTML(devices)
+		site := cfg.Site
+		if site == "" {
+			site = "default"
+		}
+		version, err := client.GetControllerVersion(ctx, site)
+		if err != nil {
+			version = "unknown"
+		}
+		return writeDeviceTypesHTML(devices, version)
 	}
 
 	return writeDeviceTypesCSV(devices)
@@ -87,7 +95,7 @@ func writeDeviceTypesCSV(devices []provider.FingerprintDevice) error {
 	return nil
 }
 
-func writeDeviceTypesHTML(devices []provider.FingerprintDevice) error {
+func writeDeviceTypesHTML(devices []provider.FingerprintDevice, controllerVersion string) error {
 	// Collect unique types and vendors for the filter dropdowns.
 	typeSet := map[string]bool{}
 	vendorSet := map[string]bool{}
@@ -120,7 +128,8 @@ func writeDeviceTypesHTML(devices []provider.FingerprintDevice) error {
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; }
   .header { background: #1a1a2e; color: #fff; padding: 24px; position: sticky; top: 0; z-index: 10; }
-  .header h1 { font-size: 20px; margin-bottom: 12px; }
+  .header h1 { font-size: 20px; margin-bottom: 4px; }
+  .header .version { font-size: 13px; color: #aaa; margin-bottom: 12px; }
   .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
   .controls input {
     flex: 1; min-width: 200px; max-width: 500px; padding: 10px 14px; font-size: 16px;
@@ -132,20 +141,29 @@ func writeDeviceTypesHTML(devices []provider.FingerprintDevice) error {
   }
   .header .stats { font-size: 13px; color: #aaa; margin-top: 8px; }
   table { width: 100%; border-collapse: collapse; background: #fff; }
-  th { background: #e8e8e8; position: sticky; top: 130px; text-align: left; padding: 10px 14px; font-size: 13px; }
+  th { background: #e8e8e8; position: sticky; top: 150px; text-align: left; padding: 10px 14px; font-size: 13px; }
   td { padding: 8px 14px; border-bottom: 1px solid #eee; vertical-align: middle; }
   tr.hidden { display: none; }
+  .icon-cell { width: 48px; height: 48px; }
   .icon { width: 48px; height: 48px; object-fit: contain; }
   .id { font-family: monospace; font-size: 14px; color: #666; }
   .name { font-weight: 500; }
   .meta { font-size: 12px; color: #888; }
+  .copy-btn {
+    background: #e8e8e8; border: none; border-radius: 4px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; color: #555; white-space: nowrap;
+  }
+  .copy-btn:hover { background: #ddd; }
+  .copy-btn.copied { background: #4caf50; color: #fff; }
 </style>
 </head>
 <body>
 <div class="header">
   <h1>UniFi Device Types</h1>
-  <div class="controls">
-    <input type="text" id="search" placeholder="Fuzzy search by name..." autofocus>
+`)
+	fmt.Fprintf(f, "  <div class=\"version\">Controller version: %s</div>\n", html.EscapeString(controllerVersion))
+	fmt.Fprint(f, `  <div class="controls">
+    <input type="text" id="search" placeholder="Search by name or ID..." autofocus>
     <select id="filter-type"><option value="">All Types</option>
 `)
 
@@ -166,22 +184,26 @@ func writeDeviceTypesHTML(devices []provider.FingerprintDevice) error {
   <div class="stats" id="stats"></div>
 </div>
 <table>
-<thead><tr><th>Icon</th><th>ID</th><th>Name</th><th>Type / Vendor</th></tr></thead>
+<thead><tr><th>Icon</th><th>ID</th><th>Name</th><th>Type / Vendor</th><th></th></tr></thead>
 <tbody id="tbody">
 `)
 
 	for _, d := range devices {
-		fmt.Fprintf(f, `<tr data-id="%d" data-type="%s" data-vendor="%s"><td><img class="icon" src="%s" alt="%s" loading="lazy"></td><td class="id">%d</td><td class="name">%s</td><td class="meta">%s · %s</td></tr>
+		escapedName := html.EscapeString(d.Name)
+		fmt.Fprintf(f, `<tr data-id="%d" data-type="%s" data-vendor="%s" data-name="%s"><td class="icon-cell"><img class="icon" data-src="%s" alt="%s"></td><td class="id">%d</td><td class="name">%s</td><td class="meta">%s · %s</td><td><button class="copy-btn" data-copy="device_type_id = %d # %s">Copy</button></td></tr>
 `,
 			d.ID,
 			html.EscapeString(d.DevType),
 			html.EscapeString(d.Vendor),
+			escapedName,
 			iconURL(d.ID),
-			html.EscapeString(d.Name),
+			escapedName,
 			d.ID,
-			html.EscapeString(d.Name),
+			escapedName,
 			html.EscapeString(d.DevType),
 			html.EscapeString(d.Vendor),
+			d.ID,
+			escapedName,
 		)
 	}
 
@@ -194,14 +216,41 @@ const totalCount = rows.length;
 const rowById = {};
 rows.forEach(r => rowById[r.dataset.id] = r);
 
+// Lazy load images using IntersectionObserver — only load images when they
+// scroll into view, and unload them when they scroll out. This prevents
+// thousands of concurrent image requests from causing page stutter.
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    const img = entry.target;
+    if (entry.isIntersecting) {
+      if (!img.src && img.dataset.src) img.src = img.dataset.src;
+    } else {
+      if (img.src) { img.removeAttribute('src'); }
+    }
+  });
+}, { rootMargin: '200px' });
+
+document.querySelectorAll('img.icon').forEach(img => observer.observe(img));
+
+// Copy button handler.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.copy-btn');
+  if (!btn) return;
+  navigator.clipboard.writeText(btn.dataset.copy).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+  });
+});
+
 const items = rows.map(row => ({
   id: row.dataset.id,
-  name: row.querySelector('.name')?.textContent || '',
+  name: row.dataset.name || '',
   meta: row.querySelector('.meta')?.textContent || '',
 }));
 
 const fuse = new Fuse(items, {
-  keys: ['name', 'meta'],
+  keys: ['id', 'name', 'meta'],
   threshold: 0.3,
   ignoreLocation: true,
 });
