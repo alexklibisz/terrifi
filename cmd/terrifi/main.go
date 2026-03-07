@@ -33,6 +33,7 @@ func main() {
 
 	rootCmd.AddCommand(generateImportsCmd())
 	rootCmd.AddCommand(checkConnectionCmd())
+	rootCmd.AddCommand(listDeviceTypesCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

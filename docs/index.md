@@ -2,13 +2,13 @@
 page_title: "Terrifi Provider"
 subcategory: ""
 description: |-
-  Terraform provider for managing Ubiquiti UniFi network infrastructure.
+  Terraform provider and CLI for managing Ubiquiti UniFi network infrastructure.
 ---
 
 # Terrifi Provider
 
-The Terrifi provider lets you manage resources on a Ubiquiti UniFi controller.
-It communicates with the UniFi API to create, read, update, and delete network configuration such as DNS records, networks, WLANs, firewall zones, firewall zone rules, and client devices.
+Terrifi is a Terraform provider and CLI for managing Ubiquiti UniFi network infrastructure. The provider communicates with the UniFi API to create, read, update, and delete network configuration such as DNS records, networks, WLANs, firewall zones, firewall policies, and client devices. The CLI provides tools for importing existing infrastructure into Terraform, verifying controller connectivity, and browsing the device fingerprint database.
+
 We leverage hardware-in-the-loop testing to ensure that all resources are fully functional with real UniFi hardware.
 
 ## Example Usage
@@ -87,7 +87,7 @@ The API key is preferred, as it's arguably more secure and I've seen instances o
 
 ## CLI
 
-The Terrifi CLI connects to a live UniFi controller and generates Terraform `import {}` and `resource {}` blocks, making it easy to bring existing infrastructure under Terraform management.
+The Terrifi CLI is a companion tool for working with UniFi controllers. It can generate Terraform import blocks from live infrastructure, verify connectivity, and browse the device fingerprint database.
 
 ### Install
 
@@ -111,7 +111,7 @@ terrifi check-connection
 
 #### generate-imports
 
-Generate Terraform import blocks for a resource type:
+Generate Terraform `import {}` and `resource {}` blocks for a resource type, making it easy to bring existing infrastructure under Terraform management:
 
 ```sh
 terrifi generate-imports <resource_type>
@@ -126,10 +126,11 @@ Supported resource types:
 | `terrifi_dns_record` | DNS records | [dns_record](resources/dns_record.md) |
 | `terrifi_firewall_zone` | Firewall zones | [firewall_zone](resources/firewall_zone.md) |
 | `terrifi_firewall_policy` | Firewall policies | [firewall_policy](resources/firewall_policy.md) |
+| `terrifi_firewall_policy_order` | Firewall policy ordering | [firewall_policy_order](resources/firewall_policy_order.md) |
 | `terrifi_network` | Networks | [network](resources/network.md) |
 | `terrifi_wlan` | Wireless networks | [wlan](resources/wlan.md) |
 
-#### Example
+Example:
 
 ```sh
 terrifi generate-imports terrifi_dns_record > imports.tf
@@ -151,3 +152,19 @@ resource "terrifi_dns_record" "web_example_com" {
 ```
 
 You can then run `terraform plan` to verify and `terraform apply` to complete the import.
+
+#### list-device-types
+
+Browse the UniFi controller's fingerprint database to find device type IDs. These IDs can be used as `dev_id_override` values to set custom icons on client devices. Outputs CSV by default:
+
+```sh
+terrifi list-device-types > device_types.csv
+```
+
+Use the `--html` flag to generate a browsable HTML page (`unifi-device-types.html`) with device icons, fuzzy search, and filterable type/vendor dropdowns:
+
+```sh
+terrifi list-device-types --html
+```
+
+The HTML page loads device icons from Ubiquiti's CDN (`https://static.ui.com/fingerprint/0/{id}_257x257.png`) and uses [Fuse.js](https://www.fusejs.io/) for fuzzy search. Search results are ranked by relevance, and the type/vendor dropdowns update dynamically to only show options that match the current filters.
