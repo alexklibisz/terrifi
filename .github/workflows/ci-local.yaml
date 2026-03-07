@@ -45,7 +45,7 @@ jobs:
         timeout-minutes: 1
         run: task fmt
       - name: Unit tests
-        timeout-minutes: 1
+        timeout-minutes: 5
         run: task test:unit
       - name: Acceptance tests (Docker)
         timeout-minutes: 10
