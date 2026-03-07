@@ -37,8 +37,10 @@ jobs:
         uses: opentofu/setup-opentofu@v1
         with:
           tofu_wrapper: false
-      - name: Set TF_ACC_TERRAFORM_PATH
-        run: echo "TF_ACC_TERRAFORM_PATH=$(which tofu)" >> "$GITHUB_ENV"
+      - name: Configure OpenTofu for acceptance tests
+        run: |
+          echo "TF_ACC_TERRAFORM_PATH=$(which tofu)" >> "$GITHUB_ENV"
+          echo "TF_ACC_PROVIDER_HOST=registry.opentofu.org" >> "$GITHUB_ENV"
       - name: Install Taskfile
         timeout-minutes: 1
         uses: arduino/setup-task@v2
