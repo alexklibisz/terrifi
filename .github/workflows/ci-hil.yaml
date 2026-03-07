@@ -41,11 +41,12 @@ jobs:
         run: |
           echo "TF_ACC_TERRAFORM_PATH=$(which tofu)" >> "$GITHUB_ENV"
           echo "TF_ACC_PROVIDER_HOST=registry.opentofu.org" >> "$GITHUB_ENV"
-      - name: Install Taskfile
+      - name: Install Task
         timeout-minutes: 1
         uses: arduino/setup-task@v2
         with:
           version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check UniFi API key
         timeout-minutes: 1
         run: task checkAPIConnection
