@@ -53,26 +53,6 @@ This section describes the hardware and software that I've deployed to support h
 4. [A UniFi AC Pro access point](https://store.ui.com/us/en/products/uap-ac-pro). I purchased it used on eBay specifically for this project. I use some newer access points in my actual network, but this is good enough for testing.
 5. A Beelink Mini PC running Proxmox. I run two VMs here: one for the self-hosted UniFi OS Server and one for the Github Actions runner that runs the HIL test suite.
 
-```mermaid
-graph TD
-    HomeWiFi["Home WiFi"]
-    Opal["Gl.iNet Opal\n(travel router / ISP modem analog)"]
-    GW["UniFi Gateway Lite\n(UXG-Lite)"]
-    SW["Generic Gigabit\n5-Port Switch"]
-    AP["UniFi AC Pro\n(access point)"]
-    Beelink["Beelink Mini PC\n(Proxmox)"]
-    VM1["VM: UniFi OS Server\n(self-hosted controller)"]
-    VM2["VM: GitHub Actions Runner\n(HIL test suite)"]
-
-    HomeWiFi -->|WiFi uplink| Opal
-    Opal -->|WAN| GW
-    GW -->|LAN| SW
-    SW --> AP
-    SW --> Beelink
-    Beelink --> VM1
-    Beelink --> VM2
-```
-
 ### Software
 
 The Beelink Mini PC runs [Proxmox](https://www.proxmox.com/) as the hypervisor, hosting two Ubuntu VMs:
@@ -80,22 +60,6 @@ The Beelink Mini PC runs [Proxmox](https://www.proxmox.com/) as the hypervisor, 
 1. **UniFi OS Server VM** — runs [UniFi OS Server](https://ui.com/download/releases/unifi-os-server), installed via [`unifi-os-server/install.sh`](./unifi-os-server/install.sh). UniFi OS Server is a single binary that downloads an embedded Podman container and registers it as a `systemd` service. It exposes the full UniFi API (including zone-based firewall) at `https://<host>:11443`.
 
 2. **GitHub Actions Runner VM** — runs a self-hosted GitHub Actions runner via Docker Compose ([`github-runner/`](./github-runner/)). The runner uses the [myoung34/github-runner](https://github.com/myoung34/docker-github-actions-runner) base image and is ephemeral (clean workspace per job). It carries the labels `self-hosted` and `terrifi-hardware-test`, which the HIL CI workflow uses to target it specifically.
-
-```mermaid
-graph TD
-    GH["GitHub Actions\n(CI workflow)"]
-    Runner["GitHub Actions Runner VM\n(Ubuntu + Docker)"]
-    UOS["UniFi OS Server VM\n(Ubuntu + Podman)"]
-    Container["uosserver container\n(MongoDB + UniFi + RabbitMQ)"]
-    GW["UniFi Gateway Lite"]
-    AP["UniFi AC Pro"]
-
-    GH -->|"dispatches job\n(terrifi-hardware-test label)"| Runner
-    Runner -->|"runs acceptance tests\n(TERRIFI_ACC_TARGET=hardware)"| UOS
-    UOS --> Container
-    Container -->|"manages via UniFi API"| GW
-    Container -->|"manages via UniFi API"| AP
-```
 
 See the subdirectory READMEs for setup instructions:
 - [`unifi-os-server/`](./unifi-os-server/) — install and manage UOS Server
