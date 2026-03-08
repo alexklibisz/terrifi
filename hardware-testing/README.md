@@ -1,5 +1,7 @@
 # Hardware Testing
 
+> It works on my network.
+
 ## Overview
 
 Terrifi uses hardware testing (aka hardware-in-the-loop testing or HIL testing) to ensure all features work with real UniFi hardware.
