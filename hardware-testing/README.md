@@ -15,8 +15,8 @@ The simulation target exposes some but not all functionality of a real UniFi net
 For example, firewall zones, firewall policies, and WLANs all require real hardware to test.
 
 The HIL mode is a real UniFi OS Server with real UniFi hardware.
-So we can test almost all the functionality of the connected hardware.
-The only functionality we can't test is some aspects of the initial setup, e.g., resetting and adopting devices.
+So I can test almost all the functionality of the connected hardware.
+The only functionality I can't test is some aspects of the initial setup, e.g., resetting and adopting devices.
 
 ## Background
 
@@ -43,13 +43,17 @@ It seems that the installer contains an embedded Podman container (~800MB size),
 
 ## Hardware
 
-<img src="hardware.jpg" alt="Image of the hardware-in-the-loop testing setup" height="420">
+Here's the hardware I'm using:
 
 1. [A Gl.iNet Opal travel router](https://www.amazon.com/GL-iNet-GL-SFT1200-Secure-Travel-Router/dp/B09N72FMH5). I use this to connect the HIL setup to my home WiFi. It's analogous to an ISP modem in a typical home network. I did it this way so that the test harness is fully isolated from my actual UniFi network, and so I can place the test harness in the corner of my office where I don't have an Ethernet connection.
 2. [A UniFi Gateway Lite](https://www.amazon.com/Ubiquiti-Networks-Gateway-Lite-UXG-Lite/dp/B0CW2DZZ3Z). I purchased this specifically for this project. I also happen to use a Gateway Lite for my home network.
 3. A generic gigabit 5-port switch. This is analogous to an unmanaged switch in a typical network.
 4. [A UniFi AC Pro access point](https://store.ui.com/us/en/products/uap-ac-pro). I purchased it used on eBay specifically for this project. I use some newer access points in my actual network, but this is good enough for testing.
 5. A Beelink Mini PC running Proxmox. I run two VMs here: one for the self-hosted UniFi OS Server and one for the GitHub Actions runner that runs the HIL test suite.
+
+And here's a photo:
+
+<img src="hardware.jpg" alt="Image of the hardware-in-the-loop testing setup" height="420">
 
 ## Software
 
