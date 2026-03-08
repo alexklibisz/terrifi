@@ -16,7 +16,7 @@ For example, firewall zones, firewall policies, and WLANs all require real hardw
 
 The HIL mode is a real UniFi OS Server with real UniFi hardware.
 So we can test almost all the functionality of the connected hardware.
-The only functionality we can't test is some aspects of the initial setup, e.g., reseting and adopting devices.
+The only functionality we can't test is some aspects of the initial setup, e.g., resetting and adopting devices.
 
 ## Background
 
@@ -47,7 +47,7 @@ This section describes the hardware and software that I've deployed to support h
 
 ### Hardware
 
-1. [A Gl.iNet Opal travel router](https://www.amazon.com/GL-iNet-GL-SFT1200-Secure-Travel-Router/dp/B09N72FMH5?th=1). I use this to connect the HIL setup to my home WiFi. It's analogous to an ISP modem in a typical home network. I did it this way so that the test harness is fully isolated from my actual UniFi newtwork, and so I can place the test harness in the corner of my office where I don't have an Ethernet connection.
+1. [A Gl.iNet Opal travel router](https://www.amazon.com/GL-iNet-GL-SFT1200-Secure-Travel-Router/dp/B09N72FMH5). I use this to connect the HIL setup to my home WiFi. It's analogous to an ISP modem in a typical home network. I did it this way so that the test harness is fully isolated from my actual UniFi network, and so I can place the test harness in the corner of my office where I don't have an Ethernet connection.
 2. [A UniFi Gateway Lite](https://www.amazon.com/Ubiquiti-Networks-Gateway-Lite-UXG-Lite/dp/B0CW2DZZ3Z). I purchased this specifically for this project. I also happen to use a Gateway Lite for my home network.
 3. A generic gigabit 5-port switch. This is analogous to an unmanaged switch in a typical network.
 4. [A UniFi AC Pro access point](https://store.ui.com/us/en/products/uap-ac-pro). I purchased it used on eBay specifically for this project. I use some newer access points in my actual network, but this is good enough for testing.
