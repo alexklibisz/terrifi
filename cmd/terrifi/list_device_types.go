@@ -201,8 +201,9 @@ func writeDeviceTypesHTML(devices []provider.FingerprintDevice, controllerVersio
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; }
   .header { background: #1a1a2e; color: #fff; padding: 24px; position: sticky; top: 0; z-index: 10; }
   .header h1 { font-size: 20px; margin-bottom: 4px; }
-  .header .version { font-size: 13px; color: #aaa; margin-bottom: 12px; }
-  .header .version a { color: #ccc; text-decoration: underline; }
+  .header .subtitle { font-size: 14px; color: #bbb; margin-bottom: 8px; line-height: 1.4; }
+  .header .subtitle a { color: #ccc; text-decoration: underline; }
+  .header .version { font-size: 13px; color: #888; margin-bottom: 12px; }
   .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
   .controls input {
     flex: 1; min-width: 200px; max-width: 500px; padding: 10px 14px; font-size: 16px;
@@ -244,8 +245,9 @@ func writeDeviceTypesHTML(devices []provider.FingerprintDevice, controllerVersio
 <body>
 <div class="header">
   <h1>UniFi Device Types</h1>
+  <p class="subtitle">Browse the UniFi controller fingerprint database to find device type IDs for use with <a href="https://github.com/alexklibisz/terraform-provider-terrifi">Terrifi</a>, a Terraform provider for UniFi.</p>
 `)
-	fmt.Fprintf(f, "  <div class=\"version\">Generated with <a href=\"https://github.com/alexklibisz/terraform-provider-terrifi\">Terrifi CLI</a> from controller version %s</div>\n", html.EscapeString(controllerVersion))
+	fmt.Fprintf(f, "  <div class=\"version\">Generated from controller version %s</div>\n", html.EscapeString(controllerVersion))
 	fmt.Fprint(f, `  <div class="controls">
     <input type="text" id="search" placeholder="Search by name or ID..." autofocus>
 `)
