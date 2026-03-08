@@ -1,6 +1,6 @@
 # Hardware Testing
 
-![Image of the hardware-in-the-loop testing setup](hardware.jpg)
+<img src="hardware.jpg" alt="Image of the hardware-in-the-loop testing setup" height="420">
 
 ## Overview
 
