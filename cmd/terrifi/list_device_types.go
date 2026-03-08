@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
-	"html"
 	"io"
 	"net/http"
 	"os"
@@ -182,6 +182,27 @@ func writeDeviceTypesHTML(devices []provider.FingerprintDevice, controllerVersio
 	types := sortedKeys(typeSet)
 	vendors := sortedKeys(vendorSet)
 
+	// Build JSON data for devices.
+	type deviceJSON struct {
+		ID      int64  `json:"id"`
+		Name    string `json:"name"`
+		Type    string `json:"type"`
+		Vendor  string `json:"vendor"`
+	}
+	jsonDevices := make([]deviceJSON, len(devices))
+	for i, d := range devices {
+		jsonDevices[i] = deviceJSON{
+			ID:     d.ID,
+			Name:   d.Name,
+			Type:   d.DevType,
+			Vendor: d.Vendor,
+		}
+	}
+	jsonData, err := json.Marshal(jsonDevices)
+	if err != nil {
+		return fmt.Errorf("marshaling device data: %w", err)
+	}
+
 	outputFile := filepath.Join(outputDir, "index.html")
 	f, err := os.Create(outputFile)
 	if err != nil {
@@ -189,6 +210,8 @@ func writeDeviceTypesHTML(devices []provider.FingerprintDevice, controllerVersio
 	}
 	defer f.Close()
 
+	// Write the static HTML shell with embedded JSON data.
+	// The JS renders rows on demand instead of parsing thousands of DOM nodes.
 	fmt.Fprint(f, `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -222,7 +245,6 @@ func writeDeviceTypesHTML(devices []provider.FingerprintDevice, controllerVersio
   col.c-action { width: 80px; }
   th { background: #e8e8e8; position: sticky; text-align: left; padding: 10px 14px; font-size: 13px; z-index: 5; }
   td { padding: 8px 14px; border-bottom: 1px solid #eee; vertical-align: middle; }
-  tr.hidden { display: none; }
   .icon-cell { width: 48px; height: 48px; background: #f0f0f0; border-radius: 6px; }
   .icon { width: 48px; height: 48px; object-fit: contain; }
   .icon:not([src]) { visibility: hidden; }
@@ -247,23 +269,19 @@ func writeDeviceTypesHTML(devices []provider.FingerprintDevice, controllerVersio
   <h1>UniFi Device Types</h1>
   <p class="subtitle">Browse the UniFi controller fingerprint database to find device type IDs for use with <a href="https://github.com/alexklibisz/terraform-provider-terrifi">Terrifi</a>, a Terraform provider for UniFi.</p>
 `)
-	fmt.Fprintf(f, "  <div class=\"version\">Generated from controller version %s</div>\n", html.EscapeString(controllerVersion))
+	fmt.Fprintf(f, "  <div class=\"version\">Generated from controller version %s</div>\n", controllerVersion)
 	fmt.Fprint(f, `  <div class="controls">
     <input type="text" id="search" placeholder="Search by name or ID..." autofocus>
 `)
 	fmt.Fprintf(f, "    <select id=\"filter-type\"><option value=\"\">All Types (%d)</option>\n", len(types))
-
 	for _, t := range types {
-		fmt.Fprintf(f, "    <option value=\"%s\">%s</option>\n", html.EscapeString(t), html.EscapeString(t))
+		fmt.Fprintf(f, "    <option>%s</option>\n", t)
 	}
-
 	fmt.Fprint(f, "    </select>\n")
 	fmt.Fprintf(f, "    <select id=\"filter-vendor\"><option value=\"\">All Vendors (%d)</option>\n", len(vendors))
-
 	for _, v := range vendors {
-		fmt.Fprintf(f, "    <option value=\"%s\">%s</option>\n", html.EscapeString(v), html.EscapeString(v))
+		fmt.Fprintf(f, "    <option>%s</option>\n", v)
 	}
-
 	fmt.Fprint(f, `    </select>
   </div>
 `)
@@ -272,39 +290,37 @@ func writeDeviceTypesHTML(devices []provider.FingerprintDevice, controllerVersio
 <table>
 <colgroup><col class="c-icon"><col class="c-id"><col class="c-name"><col class="c-meta"><col class="c-action"></colgroup>
 <thead><tr><th>Icon</th><th>ID</th><th>Name</th><th>Type / Vendor</th><th></th></tr></thead>
-<tbody id="tbody">
-`)
-
-	for _, d := range devices {
-		escapedName := html.EscapeString(d.Name)
-		fmt.Fprintf(f, `<tr data-id="%d" data-type="%s" data-vendor="%s" data-name="%s"><td class="icon-cell"><img class="icon" data-src="img/%d.png" alt="%s"></td><td class="id">%d</td><td class="name">%s</td><td class="meta">%s · %s</td><td><button class="copy-btn" data-copy="device_type_id = %d # %s">Copy</button></td></tr>
-`,
-			d.ID,
-			html.EscapeString(d.DevType),
-			html.EscapeString(d.Vendor),
-			escapedName,
-			d.ID,
-			escapedName,
-			d.ID,
-			escapedName,
-			html.EscapeString(d.DevType),
-			html.EscapeString(d.Vendor),
-			d.ID,
-			escapedName,
-		)
-	}
-
-	fmt.Fprint(f, `</tbody>
+<tbody id="tbody"></tbody>
 </table>
 <script>
+const DATA = `)
+	f.Write(jsonData)
+	fmt.Fprint(f, `;
+
 const tbody = document.getElementById('tbody');
-const rows = Array.from(tbody.querySelectorAll('tr'));
-const totalCount = rows.length;
+const totalCount = DATA.length;
+
+// Pre-build a DOM row for each device and index by string ID.
 const rowById = {};
-rows.forEach(r => rowById[r.dataset.id] = r);
+const rows = [];
+const frag = document.createDocumentFragment();
+for (const d of DATA) {
+  const tr = document.createElement('tr');
+  tr.innerHTML =
+    '<td class="icon-cell"><img class="icon" data-src="img/' + d.id + '.png" alt="' + d.name + '"></td>' +
+    '<td class="id">' + d.id + '</td>' +
+    '<td class="name">' + d.name + '</td>' +
+    '<td class="meta">' + d.type + ' \u00b7 ' + d.vendor + '</td>' +
+    '<td><button class="copy-btn">Copy</button></td>';
+  tr._d = d;
+  tr._copyText = 'device_type_id = ' + d.id + ' # ' + d.name;
+  rowById[String(d.id)] = tr;
+  rows.push(tr);
+  frag.appendChild(tr);
+}
+tbody.appendChild(frag);
 
 // Pin table header row just below the sticky page header.
-// Use ResizeObserver to react to any header height changes (e.g. stats text appearing).
 const header = document.querySelector('.header');
 const ths = document.querySelectorAll('th');
 new ResizeObserver(() => {
@@ -324,27 +340,22 @@ const observer = new IntersectionObserver((entries) => {
     }
   });
 }, { rootMargin: '200px' });
-document.querySelectorAll('img.icon').forEach(img => observer.observe(img));
+rows.forEach(r => observer.observe(r.querySelector('.icon')));
 
 // Copy button handler.
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.copy-btn');
   if (!btn) return;
-  navigator.clipboard.writeText(btn.dataset.copy).then(() => {
+  const tr = btn.closest('tr');
+  navigator.clipboard.writeText(tr._copyText).then(() => {
     btn.textContent = 'Copied!';
     btn.classList.add('copied');
     setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
   });
 });
 
-const items = rows.map(row => ({
-  id: row.dataset.id,
-  name: row.dataset.name || '',
-  meta: row.querySelector('.meta')?.textContent || '',
-}));
-
-const fuse = new Fuse(items, {
-  keys: ['id', 'name', 'meta'],
+const fuse = new Fuse(DATA, {
+  keys: [{name: 'id', getFn: d => String(d.id)}, 'name', 'type', 'vendor'],
   threshold: 0.3,
   ignoreLocation: true,
 });
@@ -382,51 +393,39 @@ function applyFilters() {
   const selectedType = filterType.value;
   const selectedVendor = filterVendor.value;
 
-  // Get search results (ordered by relevance) or null for no query.
   let orderedIds = null;
   let matchIdSet = null;
   if (query) {
-    orderedIds = fuse.search(query).map(r => r.item.id);
+    orderedIds = fuse.search(query).map(r => String(r.item.id));
     matchIdSet = new Set(orderedIds);
   }
 
-  // Single pass: determine visibility and collect dropdown values.
   const typesForVendor = new Set();
   const vendorsForType = new Set();
   const visibleSet = new Set();
   rows.forEach(r => {
-    const passSearch = !matchIdSet || matchIdSet.has(r.dataset.id);
-    const passType = !selectedType || r.dataset.type === selectedType;
-    const passVendor = !selectedVendor || r.dataset.vendor === selectedVendor;
+    const d = r._d;
+    const passSearch = !matchIdSet || matchIdSet.has(String(d.id));
+    const passType = !selectedType || d.type === selectedType;
+    const passVendor = !selectedVendor || d.vendor === selectedVendor;
     if (passSearch && passType && passVendor) visibleSet.add(r);
-    if (passSearch && passVendor && r.dataset.type) typesForVendor.add(r.dataset.type);
-    if (passSearch && passType && r.dataset.vendor) vendorsForType.add(r.dataset.vendor);
+    if (passSearch && passVendor && d.type) typesForVendor.add(d.type);
+    if (passSearch && passType && d.vendor) vendorsForType.add(d.vendor);
   });
 
-  // Build display order: relevance-ranked for search, original for no search.
-  const frag = document.createDocumentFragment();
+  const fragment = document.createDocumentFragment();
   if (orderedIds) {
-    rows.forEach(r => r.classList.add('hidden'));
     for (const id of orderedIds) {
       const row = rowById[id];
-      if (visibleSet.has(row)) {
-        row.classList.remove('hidden');
-        frag.appendChild(row);
-      }
+      if (visibleSet.has(row)) fragment.appendChild(row);
     }
   } else {
     rows.forEach(r => {
-      r.classList.toggle('hidden', !visibleSet.has(r));
-      frag.appendChild(r);
+      if (visibleSet.has(r)) fragment.appendChild(r);
     });
   }
-  tbody.appendChild(frag);
-
-  // Trigger lazy load for newly visible images.
-  visibleSet.forEach(r => {
-    const img = r.querySelector('img.icon');
-    if (img && !img.src && img.dataset.src) observer.observe(img);
-  });
+  tbody.textContent = '';
+  tbody.appendChild(fragment);
 
   updateSelectOptions(filterType, 'All Types', typesForVendor);
   updateSelectOptions(filterVendor, 'All Vendors', vendorsForType);
@@ -445,7 +444,6 @@ searchInput.addEventListener('input', () => {
 });
 filterType.addEventListener('change', applyFilters);
 filterVendor.addEventListener('change', applyFilters);
-applyFilters();
 </script>
 </body>
 </html>
